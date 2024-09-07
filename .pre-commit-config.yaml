@@ -1,0 +1,10 @@
+---
+repos:
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v24.7.0
+    hooks:
+      - id: ansible-lint
+        name: Ansible Lint
+        # Uncomment if you need the full Ansible community bundle instead of ansible-core:
+        # additional_dependencies:
+        #   - ansible
