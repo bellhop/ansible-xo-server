@@ -5,3 +5,6 @@ CAUTION: This document is a work in progress and may not be complete or accurate
 
 
 CAUTION: This playbook targets nvm for the users that is running the playbook and used to login to the server.
+
+
+NOTE: NVM has to be installed for the root user as that is the user that will building and running the XO server.
