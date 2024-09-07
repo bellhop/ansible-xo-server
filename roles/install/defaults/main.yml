@@ -1,0 +1,3 @@
+---
+install_nvm_version: v0.40.1
+install_nvm_script_location: /tmp

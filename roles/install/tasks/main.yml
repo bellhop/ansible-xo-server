@@ -1,0 +1,46 @@
+---
+- name: Set the hostname
+  ansible.builtin.hostname:
+    name: '{{ inventory_hostname }}'
+  become: true
+  tags:
+    - install
+    - hostname
+
+- name: Check to see if nvm is installed and working
+  ansible.builtin.shell: source ~/.bashrc && nvm --version
+  register: nvm_version
+  changed_when: nvm_version.rc != 0
+  failed_when: nvm_version.rc != 0
+  ignore_errors: true
+  tags:
+    - install
+    - nvm
+
+- name: Install nvm
+  when: nvm_version.failed # TODO: Add a check on the version to see if it needs upgraded
+  block:
+    - name: Get the nvm install script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/nvm-sh/nvm/{{ install_nvm_version }}/install.sh
+        dest: '{{ install_nvm_script_location }}/install.sh'
+        mode: 'u+x'
+        tmp_dest: /tmp
+      tags:
+        - install
+        - nvm
+
+    - name: Run the nvm install script
+      ansible.builtin.command: '{{ install_nvm_script_location }}/install.sh'
+      changed_when: nvm_version.rc == 0
+      tags:
+        - install
+        - nvm
+
+    - name: Remove the nvm install script
+      ansible.builtin.file:
+        path: '{{ install_nvm_script_location }}/install.sh'
+        state: absent
+      tags:
+        - install
+        - nvm

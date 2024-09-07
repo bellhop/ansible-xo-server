@@ -2,3 +2,6 @@
 :icons: font
 
 CAUTION: This document is a work in progress and may not be complete or accurate.
+
+
+CAUTION: This playbook targets nvm for the users that is running the playbook and used to login to the server.
