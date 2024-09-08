@@ -1,4 +1,4 @@
-= XO Server Deployed, Configured, and Updated by Ansible
+= XO Server Ansible Playbooks
 :icons: font
 
 == Overview
@@ -37,6 +37,8 @@ It will do this by doing the following things:
 * Create a service file for the XO Server and start the service.
 
 === Variables
+
+These variables are preset in the _install_ role by default values and can be overridden as needed.
 
 |===
 | Variable Name | Description | Default Value
