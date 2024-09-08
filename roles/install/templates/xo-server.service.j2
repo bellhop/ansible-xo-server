@@ -1,0 +1,14 @@
+[Unit]
+Description=XO Server
+After=network-online.target
+
+[Service]
+Environment=PATH={{ find_root_path.stdout }}
+Environment=DEBUG=xo:main
+ExecStart={{ install_xo_location }}/packages/xo-server/dist/cli.mjs
+WorkingDirectory={{ install_xo_location }}/packages/xo-server
+SyslogIdentifier=xo-server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

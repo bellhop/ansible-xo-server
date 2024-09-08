@@ -1,0 +1,242 @@
+---
+- name: Set the hostname
+  ansible.builtin.hostname:
+    name: '{{ inventory_hostname }}'
+  become: true
+  tags:
+    - install
+    - hostname
+
+- name: Install the required packages for XO-Server
+  ansible.builtin.dnf:
+    name: '{{ item }}'
+    state: present
+  loop:
+    - redis
+    - libpng-devel
+    - git
+    - lvm2
+    - cifs-utils
+    - make
+    - automake
+    - gcc
+    - gcc-c++
+    - nfs-utils
+    - ntfs-3g
+    - firewalld
+  become: true
+  tags:
+    - install
+    - packages
+
+- name: Start and enable the redis service
+  ansible.builtin.systemd_service:
+    name: redis
+    state: started
+    enabled: true
+  become: true
+  tags:
+    - install
+    - redis
+
+- name: Start and enable firewalld
+  ansible.builtin.systemd_service:
+    name: firewalld
+    state: started
+    enabled: true
+  become: true
+  tags:
+    - install
+    - firewalld
+
+- name: Enable http service in firewalld
+  ansible.posix.firewalld:
+    service: http
+    permanent: true
+    state: enabled
+    immediate: true
+  become: true
+  tags:
+    - install
+    - firewalld
+
+- name: Enable https service in firewalld
+  ansible.posix.firewalld:
+    service: https
+    permanent: true
+    state: enabled
+    immediate: true
+  become: true
+  tags:
+    - install
+    - firewalld
+
+- name: Check to see if nvm is installed and working
+  ansible.builtin.shell: source ~/.bashrc && nvm --version
+  register: nvm_version
+  changed_when: nvm_version.rc != 0
+  failed_when: nvm_version.rc != 0
+  ignore_errors: true
+  become: true
+  tags:
+    - install
+    - nvm
+
+- name: Install nvm
+  when: nvm_version.failed # TODO: Add a check on the version to see if it needs upgraded
+  block:
+    - name: Get the nvm install script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/nvm-sh/nvm/{{ install_nvm_version }}/install.sh
+        dest: '{{ install_nvm_script_location }}/install.sh'
+        mode: 'u+x'
+      become: true
+      tags:
+        - install
+        - nvm
+
+    - name: Run the nvm install script
+      ansible.builtin.command: '{{ install_nvm_script_location }}/install.sh'
+      changed_when: nvm_version.rc == 0
+      become: true
+      tags:
+        - install
+        - nvm
+
+    - name: Remove the nvm install script
+      ansible.builtin.file:
+        path: '{{ install_nvm_script_location }}/install.sh'
+        state: absent
+      become: true
+      tags:
+        - install
+        - nvm
+
+- name: Install the latest lts version of nodejs
+  ansible.builtin.shell: source ~/.bashrc && nvm install --lts
+  register: install_nodejs
+  changed_when: install_nodejs.stderr is not search('already installed')
+  failed_when: install_nodejs.rc != 0
+  become: true
+  tags:
+    - install
+    - nodejs
+
+- name: Enable corepack
+  ansible.builtin.shell: source ~/.bashrc && corepack enable
+  register: enable_corepack
+  changed_when: enable_corepack.rc != 0
+  failed_when: enable_corepack.rc != 0
+  become: true
+  tags:
+    - install
+    - corepack-enable
+
+- name: Clone the XO-Server repository
+  ansible.builtin.git:
+    repo: https://github.com/vatesfr/xen-orchestra
+    dest: '{{ install_xo_location }}'
+    single_branch: true
+    version: master
+  become: true
+  tags:
+    - install
+    - xo-server-repo
+
+- name: Install the required nodejs packages for XO-Server
+  ansible.builtin.shell: source ~/.bashrc && yarn
+  args:
+    chdir: '{{ install_xo_location }}'
+  register: install_yarn_packages
+  changed_when: install_yarn_packages.rc != 0
+  failed_when: install_yarn_packages.rc != 0
+  become: true
+  tags:
+    - install
+    - xo-server-build
+
+- name: Build XO-Server
+  ansible.builtin.shell: source ~/.bashrc && yarn build
+  args:
+    chdir: '{{ install_xo_location }}'
+  register: build_xo_server
+  changed_when: build_xo_server.rc != 0
+  failed_when: build_xo_server.rc != 0
+  become: true
+  tags:
+    - install
+    - xo-server-build
+
+- name: Create the config directory
+  ansible.builtin.file:
+    path: /etc/xo-server
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  tags:
+    - install
+    - xo-server-config
+
+- name: Copy config file
+  ansible.builtin.copy:
+    src: '{{ install_xo_location }}/packages/xo-server/sample.config.toml'
+    remote_src: true
+    dest: /etc/xo-server/config.toml
+    owner: root
+    group: root
+    mode: '0600'
+  become: true
+  tags:
+    - install
+    - xo-server-config
+
+- name: Configure the XO-Server config file
+  ansible.builtin.lineinfile:
+    path: /etc/xo-server/config.toml
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+  loop:
+    - { regexp: '^#?\s*redirectToHttps\s*=', line: 'redirectToHttps = true' }
+    - { regexp: '^#?\s*publicUrl\s*=', line: "publicUrl = 'https://{{ inventory_hostname }}'" }
+    - { regexp: '^#?\s*port\s*=\s*443', line: 'port = 443' }
+    - { regexp: '^#?\s*cert\s*=', line: "cert = '{{ install_cert_file }}'" }
+    - { regexp: '^#?\s*key\s*=', line: "key = '{{ install_key_file }}'" }
+  become: true
+  tags:
+    - install
+    - xo-server-config
+
+- name: Find the nodejs binary
+  ansible.builtin.shell: source ~/.bashrc && echo $PATH
+  register: find_root_path
+  changed_when: find_root_path.rc != 0
+  failed_when: find_root_path.rc != 0
+  become: true
+  tags:
+    - install
+    - xo-server-service
+
+- name: Template the systemd service file
+  ansible.builtin.template:
+    src: xo-server.service.j2
+    dest: /etc/systemd/system/xo-server.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  tags:
+    - install
+    - xo-server-service
+
+- name: Start and enable the XO Server service
+  ansible.builtin.systemd_service:
+    name: xo-server
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true
+  tags:
+    - install
+    - xo-server-service
