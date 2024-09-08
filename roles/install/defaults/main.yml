@@ -1,6 +1,6 @@
 ---
 install_nvm_version: v0.40.1
 install_nvm_script_location: /tmp
-install_xo_location: /opt
+install_xo_location: /opt/xen-orchestra
 install_cert_file: /etc/xo-server/cert.pem
 install_key_file: /etc/xo-server/key.pem
