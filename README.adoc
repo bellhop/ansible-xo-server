@@ -11,23 +11,13 @@ If you would like to know more about the XO Server and xcp-ng servers,  please v
 The playbook contains the following plays:
 
 * `install` - Installs the XO Server as a service
-* `update` - Pulls the latest code from GitHub and updates the XO Server
-
-NOTE: The `update` play is in development.
-
-
+* `update` - **(IN DEVELOPMENT)** Pulls the latest code from GitHub and updates the XO Server
 
 === Tested Servers
 
 This playbook has been tested on the following servers:
 
 * fedora 40 server
-
-CAUTION: This playbook targets nvm for the users that is running the playbook and used to login to the server.
-
-
-NOTE: NVM has to be installed for the root user as that is the user that will building and running the XO server.
-
 
 == `install` Play Usage
 
