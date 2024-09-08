@@ -200,7 +200,6 @@
   loop:
     - { regexp: '^#?\s*redirectToHttps\s*=', line: 'redirectToHttps = true' }
     - { regexp: '^#?\s*publicUrl\s*=', line: "publicUrl = 'https://{{ inventory_hostname }}'" }
-    - { regexp: '^#?\s*port\s*=\s*80', line: '# port = 80' }
     - { regexp: '^#?\s*port\s*=\s*443', line: 'port = 443' }
     - { regexp: '^#?\s*cert\s*=', line: "cert = '{{ install_cert_file }}'" }
     - { regexp: '^#?\s*key\s*=', line: "key = '{{ install_key_file }}'" }
